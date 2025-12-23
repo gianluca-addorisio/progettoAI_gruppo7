@@ -11,6 +11,22 @@ class DistanceStrategy(ABC):
     def compute(self, point1, point2):
         pass
 
+class EuclideanDistance(DistanceStrategy):
+    """
+    Implementazione della distanza Euclidea.
+    """
+    def compute(self, point1, point2):
+        """
+        Parametri:
+        point1 -> conterrà il singolo campione di test
+        point2 -> conterrà tutti i campioni del training set
+        ----
+        Valore restituito:
+        Restituirà in un array tutte le distanze del singolo campione di test
+        da tutti i campioni di training sfruttando il broadcasting di numpy
+        """
+        return np.linalg.norm(point1 - point2, axis=1)
+    
 class KNN:
     """
     Classe principale che implementa l'algoritmo KNN
