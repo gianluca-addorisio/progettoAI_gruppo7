@@ -168,8 +168,16 @@ class DataPreprocessor:
         """
         Applica al dataset le trasformazioni apprese nel fit().
 
+        Eccezioni
+      -------------------
+      RuntimeError
+            Solleva un'eccezione se chiamato prima di fit()
 
         """
+
+        if not self.fitted:
+            raise RuntimeError("Devi chiamare fit() prima di transform()")
+
 
         X, y = self.split_features_label(df)
 
