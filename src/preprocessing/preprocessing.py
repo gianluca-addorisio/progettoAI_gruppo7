@@ -164,9 +164,15 @@ class DataPreprocessor:
         return self
 
 
-    def transform(self, df):
+    def transform(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         """
-        Applica al dataset le trasformazioni apprese nel fit().
+        Applica al dataset di input le trasformazioni apprese nel fit().
+
+        Converte le feature a numerico.
+
+        Imputa i valori mancanti usando le mediane apprese nel training
+
+        Standardizza (se True) usando mediana e deviazione standard apprese nel training
 
         Eccezioni
       -------------------
