@@ -198,8 +198,13 @@ class DataPreprocessor:
 
 
 
-    def fit_transform(self, df):
-        # combina fit() e transform() sul training set
-        pass
+    def fit_transform(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+        """
+        Combina con una sola chiamata i metodi fit() e transform() sullo stesso dataset (training set).
+
+        """
+
+        self.fit(df)
+        return self.transform(df)
 
 
