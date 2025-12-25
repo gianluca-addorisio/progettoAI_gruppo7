@@ -3,7 +3,7 @@ import numpy as np
 
 
 class LabelEncoder:
-    """""
+    """
     La classe gestisce la codifica delle label .
 
     La convenzione adottata è:
@@ -33,15 +33,17 @@ class LabelEncoder:
         Parametri
        -------------------
         y : series
-       Serie contenente le label originali
+            Serie contenente le label originali
 
        Valore restiuito
        -------------------
-       Una serie delle label binarie.
+       pd.Series
+            Serie delle label binarie.
 
        Eccezioni
       -------------------
-       Solleva un'eccezione se sono presenti label mancanti o non valide
+      ValueError
+            Solleva un'eccezione se sono presenti label mancanti o non valide
 
         """
         #controllo presenza di label mancanti
@@ -63,12 +65,13 @@ class LabelEncoder:
 
         Parametri
        -------------------
-        y_encoded : series
-       Serie contenente le label binarie
+        y_encoded : pd.Series
+              Serie contenente le label binarie
 
        Valore restiuito
        -------------------
-       Una serie delle label originarie.
+       pd.Series
+            Serie delle label originarie.
 
         """
         return y_encoded.map(self.int_to_label)
@@ -82,22 +85,34 @@ class DataPreprocessor:
     Si occupa di:
     -separare features e label
     -convertire le feature in formato numerico per prevenire errori
-    -gestire i valori mancanti nelle features tramite imputazione
+    -gestire i valori mancanti nelle features tramite imputazione (mediana)
+    -standardizzare le feature (opzionale)
 
     """
 
-    def __init__(self, feature_cols: list[str], label_col: str):
+    def __init__(self, feature_cols: list[str], label_col: str, do_scaling: bool=True):
         """
         Parametri
        -------------------
-       - feature_cols: lista dei nomi delle colonne delle feature
-       - label_col: nome della colonna della label
+       - feature_cols: list[str]
+             Lista dei nomi delle colonne delle feature
+       - label_col: str
+              Nome della colonna della label
+      - do_scaling: bool
+               Se True applica la standardizzazione delle feature
 
         """
         self.feature_cols = feature_cols
         self.label_col = label_col
+        self.do_scaling = do_scaling
+
+        #parametri appresi nel fit()
         self.impute_values = None
-        self.fitted = False   #impedisce l'uso di transform() prima di fit()
+        self.means= None
+        self.dev_std = None
+
+        self.fitted = False  # impedisce l'uso di transform() prima di fit()
+
 
     def split_features_label(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         """
@@ -105,8 +120,10 @@ class DataPreprocessor:
 
         Valore Restituito
         -------------------
-        - X: DataFrame contenente solo le feature
-        - y: Series contenente la label
+        - X:  pd.DataFrame
+               DataFrame contenente solo le feature
+        - y: pd.Series
+             Serie contenente la label
 
         """
         #conversione delle features in valori numerici
@@ -122,7 +139,9 @@ class DataPreprocessor:
         """
         Apprende i parametri utilizzando esclusivamente il training set.
 
-        Calcola il valore di imputazione per i valori mancanti delle feature utilizzano la mediana
+        Calcola le mediane per imputare i valori mancanti delle feature
+
+        Calcola la media e la deviazione standard per ogni feature
 
         """
 
@@ -131,14 +150,39 @@ class DataPreprocessor:
 
         # calcolo della mediana per ciascuna feature
         self.impute_values = X.median(numeric_only = True)
+        X = X.fillna(self.impute_values)
+
+        #calcolo della media e della deviazione standard
+        if self.do_scaling:
+            self.means = X.mean(numeric_only= True)
+            self.dev_std = X.std(numeric_only = True, ddof = 0)
+
+            #se una feature ha lo stesso valore per tutti i campioni la std = 0, quindi si sostituisce con 1 per evitare divisione per 0
+            self.dev_std = self.dev_std.replace(0, 1.0)
 
         self.fitted = True
         return self
 
 
     def transform(self, df):
-        #applica le trasformazioni apprese nel fit a training set o test set
-        pass
+        """
+        Applica al dataset le trasformazioni apprese nel fit().
+
+
+        """
+
+        X, y = self.split_features_label(df)
+
+        #imputazione usando le mediane apprese nel fit()
+        X = X.fillna(self.impute_values)
+
+        #standardizzazione delle feature con parametri appresi nel fit()
+        if self.do_scaling:
+            X = (X - self.means) / self.dev_std
+
+        return X, y
+
+
 
     def fit_transform(self, df):
         # combina fit() e transform() sul training set
