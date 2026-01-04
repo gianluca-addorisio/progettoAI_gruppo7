@@ -16,10 +16,10 @@ Il progetto consente di:
 - `data/raw/` : dataset originali
 - `data/processed/` : dataset preprocessati 
 - `src/` : codice sorgente
-  - `dataset/` : caricam dei dati
+  - `dataset/` : caricamento dei dati
   - `preprocessing/` : pulizia e normalizzazione
   - `models/` : implementazione del k-NN
-  - `validation/` : strategie di validazione #(holdout, cross-validation)
+  - `validation/` : strategie di validazione (holdout, cross-validation)
   - `evaluation/` : calcolo delle metriche
   - `utils/` : funzioni di supporto
 - `results/metrics/` : metriche salvate
@@ -28,4 +28,4 @@ Il progetto consente di:
 - `main.py` : punto di ingresso del programma
 
 ## Stato del progetto
-Struttura iniziale del repo
+Struttura modulare del repository con componenti di validazione e valutazione implementate.
