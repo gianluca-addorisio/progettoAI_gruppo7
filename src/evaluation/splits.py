@@ -57,3 +57,31 @@ def random_subsampling_indices(n_samples, test_size=0.3, r=30, seed=42):
         splits.append((train_idx, test_idx))
 
     return splits
+
+def holdout_split_by_id(X, y, ids, test_size=0.3, seed=42):
+    """
+    Holdout split che preserva l'indipendenza dei soggetti.
+    Tutti i campioni con lo stesso ID finiscono nello stesso set.
+
+    Parametri:
+    - X: array delle features
+    - y: array delle etichette
+    - ids: array degli ID dei soggetti
+    """
+    X = np.asarray(X)
+    y = np.asarray(y)
+    ids = np.asarray(ids)
+
+    rng = np.random.default_rng(seed)
+    unique_ids = np.unique(ids)
+    rng.shuffle(unique_ids)
+
+    split = int(len(unique_ids) * (1 - test_size))
+    train_ids = unique_ids[:split]
+    test_ids = unique_ids[split:]
+
+    train_mask = np.isin(ids, train_ids)
+    test_mask = np.isin(ids, test_ids)
+
+    return X[train_mask], X[test_mask], y[train_mask], y[test_mask]
+

@@ -1,58 +1,87 @@
 import numpy as np
 
-def confusion_matrix(y_true, y_pred):
+# ============================================================
+# NOTE:
+# Questo progetto utilizza label {2, 4} come specificato
+# nella traccia:
+#   - 2 = benigno
+#   - 4 = maligno (classe positiva)
+#
+# Tutte le metriche seguenti sono quindi definite in modo
+# coerente rispetto a questa codifica.
+# ============================================================
+
+
+def confusion_matrix_binary(y_true, y_pred, positive_label=4):
     """
-    Restituisce confusion matrix binaria:
-    [[TN, FP],
-     [FN, TP]]
+    Calcola i valori della confusion matrix binaria per il dataset.
+
+    Parametri:
+    - y_true: array delle etichette reali (2 o 4)
+    - y_pred: array delle etichette predette (2 o 4)
+    - positive_label: label considerata positiva (default = 4)
+
+    Restituisce:
+    - TP, FP, TN, FN
     """
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
 
-    TN = np.sum((y_true == 0) & (y_pred == 0))
-    FP = np.sum((y_true == 0) & (y_pred == 1))
-    FN = np.sum((y_true == 1) & (y_pred == 0))
-    TP = np.sum((y_true == 1) & (y_pred == 1))
+    TP = np.sum((y_true == positive_label) & (y_pred == positive_label))
+    TN = np.sum((y_true != positive_label) & (y_pred != positive_label))
+    FP = np.sum((y_true != positive_label) & (y_pred == positive_label))
+    FN = np.sum((y_true == positive_label) & (y_pred != positive_label))
 
-    return np.array([[TN, FP],
-                     [FN, TP]])
-
-
-def accuracy(y_true, y_pred):
-    y_true = np.asarray(y_true)
-    y_pred = np.asarray(y_pred)
-    return np.mean(y_true == y_pred)
-
-def precision(y_true, y_pred):
-    cm = confusion_matrix(y_true, y_pred)
-    TP = cm[1, 1]
-    FP = cm[0, 1]
-    if TP + FP == 0:
-        return 0.0
-    return TP / (TP + FP)
+    return TP, FP, TN, FN
 
 
-def recall(y_true, y_pred):
-    cm = confusion_matrix(y_true, y_pred)
-    TP = cm[1, 1]
-    FN = cm[1, 0]
-    if TP + FN == 0:
-        return 0.0
-    return TP / (TP + FN)
-
-def specificity(y_true, y_pred):
-    cm = confusion_matrix(y_true, y_pred)
-    TN = cm[0, 0]
-    FP = cm[0, 1]
-    if TN + FP == 0:
-        return 0.0
-    return TN / (TN + FP)
+def accuracy_rate(TP, FP, TN, FN):
+    return (TP + TN) / (TP + FP + TN + FN)
 
 
-def f1_score(y_true, y_pred):
-    p = precision(y_true, y_pred)
-    r = recall(y_true, y_pred)
-    if p + r == 0:
-        return 0.0
-    return 2 * p * r / (p + r)
+def error_rate(TP, FP, TN, FN):
+    return (FP + FN) / (TP + FP + TN + FN)
+
+
+def sensitivity(TP, FN):
+    """Recall della classe positiva (maligno)."""
+    return TP / (TP + FN) if (TP + FN) > 0 else 0.0
+
+
+def specificity(TN, FP):
+    """Recall della classe negativa (benigno)."""
+    return TN / (TN + FP) if (TN + FP) > 0 else 0.0
+
+
+def geometric_mean(sens, spec):
+    return np.sqrt(sens * spec)
+
+
+def evaluate_classification(y_true, y_pred):
+    """
+    Valuta il classificatore secondo le metriche richieste dalla traccia.
+
+    Restituisce:
+    - accuracy
+    - error_rate
+    - sensitivity
+    - specificity
+    - geometric mean
+    """
+    TP, FP, TN, FN = confusion_matrix_binary(y_true, y_pred)
+
+    acc = accuracy_rate(TP, FP, TN, FN)
+    err = error_rate(TP, FP, TN, FN)
+    sens = sensitivity(TP, FN)
+    spec = specificity(TN, FP)
+    gmean = geometric_mean(sens, spec)
+
+    return {
+        "accuracy": acc,
+        "error_rate": err,
+        "sensitivity": sens,
+        "specificity": spec,
+        "gmean": gmean
+    }
+
 
