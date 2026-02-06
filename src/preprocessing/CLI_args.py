@@ -160,6 +160,7 @@ def validate_args(ns):
 
 def parse_args():
     """
+
     Funzione di chiamata CLI dal main:
     - costruisce il parser
     - legge gli argomenti
@@ -168,12 +169,14 @@ def parse_args():
     Restituisce:
     -----------
     argparse.Namespace
-        Configurazione completa estratta dalla riga di comando.
+        Configurazione completa estratta da riga di comando.
+
     """
 
     parser = build_parser()
     ns = parser.parse_args()
     return validate_args(ns)
+
 
 
 
