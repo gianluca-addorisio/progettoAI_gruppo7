@@ -84,4 +84,72 @@ def evaluate_classification(y_true, y_pred):
         "gmean": gmean
     }
 
+def _roc_curve_binary(y_true, y_score, positive_label=4):
+    """
+    Costruisce la curva ROC (FPR, TPR) per un classificatore binario.
+
+    Parametri:
+    - y_true: etichette vere {2,4}
+    - y_score: score continuo (es. frazione di vicini maligni)
+    - positive_label: label positiva (default = 4)
+
+    Restituisce:
+    - fpr: array False Positive Rate
+    - tpr: array True Positive Rate
+    """
+    y_true = np.asarray(y_true)
+    y_score = np.asarray(y_score)
+
+    # Converto le etichette in binarie: 1 = positivo, 0 = negativo
+    y_true_bin = (y_true == positive_label).astype(int)
+
+    # Ordino i punti per score decrescente
+    order = np.argsort(-y_score)
+    y_true_bin = y_true_bin[order]
+
+    # Numero totale di positivi e negativi
+    P = np.sum(y_true_bin)
+    N = len(y_true_bin) - P
+
+    TPR = []
+    FPR = []
+
+    tp = 0
+    fp = 0
+
+    # Scorro la soglia implicitamente
+    for label in y_true_bin:
+        if label == 1:
+            tp += 1
+        else:
+            fp += 1
+
+        TPR.append(tp / P if P > 0 else 0.0)
+        FPR.append(fp / N if N > 0 else 0.0)
+
+    # Aggiungo punto (0,0) all'inizio
+    TPR = np.array([0.0] + TPR)
+    FPR = np.array([0.0] + FPR)
+
+    return FPR, TPR
+
+
+def auc_score(y_true, y_score, positive_label=4):
+    """
+    Calcola l'AUC (Area Under the ROC Curve).
+
+    Parametri:
+    - y_true: etichette vere {2,4}
+    - y_score: score continuo ∈ [0,1]
+
+    Restituisce:
+    - auc: valore AUC
+    """
+    fpr, tpr = _roc_curve_binary(y_true, y_score, positive_label)
+
+    # Area sotto la curva ROC (regola dei trapezi)
+    auc = np.trapz(tpr, fpr)
+
+    return auc
+
 
