@@ -76,6 +76,46 @@ class LabelEncoder:
         """
         return y_encoded.map(self.int_to_label)
 
+class RawDatasetCleaner:
+    """
+    Classe responsabile della pulizia del dataset grezzo prima del preprocessing.
+
+    Operazioni:
+    - Conversione delle feature a numerico (se vi sono errori -> NaN)
+    - Correzione di scala per valori x > 10:
+          se x > 10 e x è multiplo di 10 e x/10 ricade nel range di dominio [1,10] allora x == x/10
+    - Eliminazione delle righe che dopo la correzione contengono valori fuori dal range
+    - Arrotondamento dei numeri decimale all'intero più vicino attraverso round
+    - Gestione duplicati (record con stesso id):
+          se per uno stesso id una label è mancante e una è presente, si tiene l'osservazione con la label
+          se per uno stesso id esistono label contrastanti, si eliminano tutte le osservazioni con quell'id
+
+    La classe produce anche un report con i conteggi delle righe modificate
+
+    """
+
+    def __init__(self, feature_cols: list[str], label_col: str, id_col: str, valid_min: float = 1.0, valid_max: float = 10.0):
+        """
+        Parametri
+        -------------------
+        - feature_cols: list[str]
+              Lista dei nomi delle colonne delle feature
+        - label_col: str
+            Nome della colonna della label
+        - id_col: str
+            Nome della colonna identificativa (Sample code number nel caso specifico)
+        - valid_min: float
+            Valore minimo ammesso per le feature (default è 1)
+        - valid_max: float
+            Valore massimo ammesso per le feature (default è 10)
+
+        """
+
+        self.feature_cols = feature_cols
+        self.label_col = label_col
+        self.id_col = id_col
+        self.valid_min = valid_min
+        self.valid_max = valid_max
 
 
 class DataPreprocessor:
