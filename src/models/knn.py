@@ -95,3 +95,37 @@ class KNN:
                 y_pred[i] = values[np.argmax(counts)]
 
         return y_pred
+        
+    def predict_scores(self, x_test, positive_label=4):
+        """
+        Calcola uno score continuo per ogni campione di test.
+        Lo score è definito come la frazione di vicini appartenenti
+        alla classe positiva (maligno).
+
+        Parametri:
+        x_test -> matrice dei campioni da testare
+        positive_label -> label della classe positiva (default = 4)
+
+        Restituisce:
+        scores -> array di float in [0,1]
+        """
+        x_test = np.array(x_test)
+        scores = np.zeros(x_test.shape[0])
+
+        # Calcolo distanze come in predict
+        distances_tot = np.zeros((x_test.shape[0], self.x_train.shape[0]))
+
+        for i, test in enumerate(x_test):
+            distance = self.distance_strategy.compute(test, self.x_train)
+            distances_tot[i] = distance
+
+        # Calcolo score per ogni campione
+        for i, dis in enumerate(distances_tot):
+            index_sorted = np.argsort(dis)
+            k_index_nearest = index_sorted[:self.k]
+            k_classes_nearest = self.y_train[k_index_nearest]
+
+            # Frazione di vicini positivi
+            scores[i] = np.sum(k_classes_nearest == positive_label) / self.k
+
+        return scores
