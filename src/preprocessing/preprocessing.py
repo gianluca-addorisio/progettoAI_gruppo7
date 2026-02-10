@@ -83,9 +83,10 @@ class RawDatasetCleaner:
     Operazioni:
     - Conversione delle feature a numerico (se vi sono errori -> NaN)
     - Correzione di scala per valori x > 10:
-          se x > 10 e x è multiplo di 10 e x/10 ricade nel range di dominio [1,10] allora x == x/10
+          se x > 10 e x è multiplo di 10 e x/10 ricade nel range di dominio [1,10] allora x:= x/10
     - Eliminazione delle righe che dopo la correzione contengono valori fuori dal range
     - Arrotondamento dei numeri decimale all'intero più vicino attraverso round
+    - Eliminazione righe con label non valida (diversa da 2 e 4)
     - Gestione duplicati (record con stesso id):
           se per uno stesso id una label è mancante e una è presente, si tiene l'osservazione con la label
           se per uno stesso id esistono label contrastanti, si eliminano tutte le osservazioni con quell'id
@@ -116,6 +117,121 @@ class RawDatasetCleaner:
         self.id_col = id_col
         self.valid_min = valid_min
         self.valid_max = valid_max
+
+    def clean(self, df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+        """
+        Funzione responsabile della pulizia del dataset.
+
+        Parametri
+        -------------------
+        df : pd.DataFrame
+              Dataset originale
+
+
+        Valore Restituito
+        -------------------
+        (df_clean, report): tuple[pd.DataFrame, dict]
+           - df_clean : dataset pulito
+           - report : dizionario con conteggi delle operazioni eseguite
+
+        """
+
+        report: dict[str,int] = {}
+
+        # creazione copia per evitare problemi sul Dataset originale
+        c = df.copy()
+        report["righe_in"] = len(c)
+
+        # conversione feature e label in numerico
+        c[self.feature_cols] = c[self.feature_cols].apply(pd.to_numeric, errors='coerce')
+        c[self.label_col] = pd.to_numeric(c[self.label_col], errors="coerce")
+
+        # conversione di scala 10 per valori > 10 e multipli di 10 e riportabili al range [1, 10]
+        X = c[self.feature_cols]
+
+        # individuazione valori candidati alla correzione
+        invalid_num = (X > self.valid_max) & ((X % 10) == 0) & ((X / 10).between(self.valid_min, self.valid_max))
+
+        report["valori_scalati_10"] = int(invalid_num.to_numpy().sum())
+        report["righe_con_valori_scalati"] = int(invalid_num.any(axis = 1).sum())
+
+        X_corretto = X.where(~invalid_num, X / 10)
+        c[self.feature_cols] = X_corretto   # si applica correzione solo dove invalid_num è True
+
+        # eliminazione righe con valori fuori range [1,10] dopo la correzione
+        X2 = c[self.feature_cols]
+
+        righe_invalide = X2.isna().any(axis=1) | (X2 < self.valid_min).any(axis = 1) | (X2 > self.valid_max).any(axis = 1)
+        report["righe_rimosse_per_valori_invalidi"] = int(righe_invalide.sum())
+
+        c = c.loc[~righe_invalide].copy()
+
+        # arrotondamento dei decimali all'intero più vicino e cast a int
+        X3 = c[self.feature_cols]
+        non_intero = (X3 % 1 != 0) # è True se decimale
+        c[self.feature_cols] = np.rint(c[self.feature_cols]).astype(int)
+
+        report["righe_con_valori_decimali"] = int(non_intero.any(axis = 1).sum())
+
+        # Eliminazione righe con label non valida (diversa da 2 e 4)
+        _label_valida = c[self.label_col].isin([2, 4])
+
+        report["righe_rimosse_label_non_valida"] = int((~_label_valida).sum())
+
+        c = c.loc[_label_valida].copy()
+
+
+        # gestione duplicati
+        gruppo = c.groupby(self.id_col, dropna = False)
+
+        righe_valide = []
+
+        # contatori per il report
+        gruppi_totali = 0
+        gruppi_label_mancanti = 0
+        gruppi_label_contrastanti = 0
+        gruppi_validi = 0
+        righe_prima = len(c)
+        righe_tenute = 0
+
+        for _, g in gruppo:
+            gruppi_totali += 1
+
+            labels = g[self.label_col].dropna().unique()
+
+            if len(labels) == 0:
+                # tutte le label mancanti: si elimina il gruppo
+                gruppi_label_mancanti += 1
+                continue
+
+            if len(labels) > 1:
+                # label contrastanti: si elimina il gruppo
+                gruppi_label_contrastanti += 1
+                continue
+
+            # una sola label valida: se ci sono righe con label presente si tiene quella
+            gruppi_validi += 1
+
+            g_valida = g[g[self.label_col].notna()]
+            if len(g_valida) > 0:
+                righe_valide.append(g_valida)
+                righe_tenute += len(g_valida)
+
+
+        c = pd.concat(righe_valide, ignore_index = True) if righe_valide else c.iloc[0:0].copy()  #se righe_valide è vuoto
+                                                                                                 # crea Dataframe vuoto senza righe e con colonne di c
+
+        # aggiornamento report
+        report["duplicati_gruppi_totali"] = gruppi_totali
+        report["duplicati_gruppi_label_mancanti"] = gruppi_label_mancanti
+        report["duplicati_gruppi_label_contrastanti"] = gruppi_label_contrastanti
+        report["duplicati_gruppi_validi"] = gruppi_validi
+        report["duplicati_righe_prima"] = righe_prima
+        report["duplicati_righe_dopo"] = len(c)
+        report["duplicati_righe_rimosse"] = righe_prima - len(c)
+        report["duplicati_righe_tenute"] = righe_tenute
+
+        return c, report
 
 
 class DataPreprocessor:
