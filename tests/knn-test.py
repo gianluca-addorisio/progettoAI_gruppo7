@@ -1,34 +1,51 @@
-from src.models.knn import KNN, EuclideanDistance
+import unittest
 import numpy as np
+from src.models.knn import KNN, EuclideanDistance
 
-# generazione dataset di prova (10 campioni, 3 features)
-np.random.seed(42)
-X_train = np.random.randint(0, 11, size=(8, 3))  # valori interi da 1 a 10
-X_test = np.random.randint(0, 11, size=(2, 3))
-y_train = np.random.choice([2, 4], size=8)
 
-# controllo se il metodo compute restituisce le giuste distanze
-e_distance = EuclideanDistance()
-for i in X_test:
-    distance = e_distance.compute(i, X_train) # array distanze tra il campione di test e tuitti i campioni di training
-    for k, p in enumerate(X_train):
-        control = np.sqrt(np.sum((i - p) ** 2))
-        assert control == distance[k], "Errore: distanza non coincidente con il controllo!"
+class TestKNN(unittest.TestCase):
 
-# controllo se il knn restituisce l'etichetta giusta
-X_train_debug = np.array([
-    [0, 0], [1, 0], [0, 1],  # molto vicini
-    [10, 10]                 # molto lontano
-])
-y_train_debug = np.array([2, 2, 2, 4])
+    def setUp(self):
+        """Inizializzazione dei dati per i test"""
+        self.distance_metric = EuclideanDistance()
 
-# punto di test proprio in mezzo ai primi tre
-X_test_debug = np.array([[1, 1]])
+        # Dataset per il test della distanza
+        np.random.seed(42)
+        self.X_train_dist = np.random.randint(0, 11, size=(8, 3))
+        self.X_test_dist = np.random.randint(0, 11, size=(2, 3))
 
-knn_debug = KNN(2, EuclideanDistance())
-knn_debug.fit(X_train_debug, y_train_debug)
+        # Dataset per il test funzionale del KNN
+        self.X_train_knn = np.array([[0, 0], [1, 0], [0, 1], [10, 10]])
+        self.y_train_knn = np.array([2, 2, 2, 4])
+        self.X_test_knn = np.array([[1, 1]])
 
-# predizione
-Y_pred_debug = knn_debug.predict(X_test_debug)
-print(f"Predizione: {Y_pred_debug}")
-assert Y_pred_debug[0] == 2, "Errore: il KNN doveva scegliere la classe 2!"
+    def test_euclidean_distance(self):
+        """Verifica che la distanza calcolata sia matematicamente corretta"""
+        for i in self.X_test_dist:
+            distances = self.distance_metric.compute(i, self.X_train_dist)
+
+            for k, p in enumerate(self.X_train_dist):
+                expected = np.sqrt(np.sum((i - p) ** 2))
+                self.assertEqual(distances[k], expected, msg=f"Distanza non coincidente all'indice {k}")
+
+    def test_knn_prediction(self):
+        """Verifica che il KNN restituisca l'etichetta corretta (maggioranza)"""
+        k_neighbors = 2
+        knn = KNN(k_neighbors, self.distance_metric)
+        knn.fit(self.X_train_knn, self.y_train_knn)
+
+        prediction = knn.predict(self.X_test_knn)
+
+        # Verifica che la predizione sia quella attesa
+        self.assertEqual(prediction[0], 2, "Il KNN doveva scegliere la classe 2!")
+
+    def test_k_equals_one(self):
+        """Verifica che con K=1 il punto prenda l'etichetta del vicino più vicino"""
+        knn = KNN(1, self.distance_metric)
+        knn.fit(self.X_train_knn, self.y_train_knn)
+        # Testiamo un punto identico al primo campione del train
+        prediction = knn.predict(np.array([self.X_train_knn[0]]))
+        self.assertEqual(prediction[0], self.y_train_knn[0])
+
+if __name__ == '__main__':
+    unittest.main()
