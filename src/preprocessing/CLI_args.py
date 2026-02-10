@@ -131,7 +131,7 @@ def validate_args(ns):
       Restituisce
       -----------
       argparse.Namespace
-          Lo stesso namespace con eventuali campi normalizzati
+          Lo stesso namespace con eventuali campi normalizzati.
     """
     # controllo numero vicini (k)
     if ns.k_neighbors < 1:
