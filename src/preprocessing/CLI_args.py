@@ -26,7 +26,7 @@ def add_args(p):
     Parametri:
     ----------
     p : argparse.ArgumentParser
-     Il parser o subparser su cui vengono registrati gli argomenti
+     Il parser o subparser su cui vengono registrati gli argomenti.
 
     """
     p.add_argument("--dataset", required=True, help="Inserire il path del dataset")
