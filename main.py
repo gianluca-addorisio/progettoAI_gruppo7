@@ -13,7 +13,7 @@ from src.evaluation.evaluation import (
 
 def main():
     # Percorso del dataset
-    dataset_path = "version_1.csv"  # Da aggiornare
+    dataset_path = "data/raw/version_1.csv"
 
     # Definizione colonne
     column_names = [
