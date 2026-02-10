@@ -5,8 +5,7 @@ from .splits import (
     kfold_indices,
     random_subsampling_indices
 )
-from .metrics import evaluate_classification
-
+from .metrics import evaluate_classification, auc_score
 
 def evaluate_model_holdout(model, X, y, ids, test_size=0.3, seed=42):
     """
@@ -18,8 +17,9 @@ def evaluate_model_holdout(model, X, y, ids, test_size=0.3, seed=42):
 
     model.fit(X_tr, y_tr)
     y_pred = model.predict(X_te)
-
-    return evaluate_classification(y_te, y_pred)
+    y_score = model.predict_scores(X_te)
+    
+    return evaluate_classification(y_te, y_pred, y_score)
 
 
 def evaluate_model_kfold(model, X, y, ids, k=5, seed=42):
@@ -40,9 +40,10 @@ def evaluate_model_kfold(model, X, y, ids, k=5, seed=42):
 
         model.fit(X[train_mask], y[train_mask])
         y_pred = model.predict(X[test_mask])
-
-        results.append(evaluate_classification(y[test_mask], y_pred))
-
+        y_score = model.predict_scores(X[test_mask])
+        
+        results.append(
+            evaluate_classification(y[test_mask], y_pred, y_score))
     return aggregate_results(results)
 
 
@@ -65,8 +66,10 @@ def evaluate_model_subsampling(model, X, y, ids, r=30, test_size=0.3, seed=42):
 
         model.fit(X[train_mask], y[train_mask])
         y_pred = model.predict(X[test_mask])
-
-        results.append(evaluate_classification(y[test_mask], y_pred))
+        y_score = model.predict_scores(X[test_mask])
+        
+        results.append(
+            evaluate_classification(y[test_mask], y_pred, y_score))
 
     return aggregate_results(results)
 
