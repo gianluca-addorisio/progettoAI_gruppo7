@@ -160,13 +160,13 @@ def main() -> None:
         "cleaning_report": cleaning_report,
         "results": results
     }
-    save_json(Path("results") / "results.json", payload)
+    save_json(Path("../results") / "results.json", payload)
     print("\n[OK] Salvato: results/results.json")
 
     # Plot solo delle metriche richieste (se "all" → tutte)
     metriche_da_plottare = results.keys()
 
-    outdir = Path("results")
+    outdir = Path("../results")
 
     for m in metriche_da_plottare:
         plot_metric_summary(results, m, outdir)
