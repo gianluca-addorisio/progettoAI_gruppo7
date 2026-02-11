@@ -72,7 +72,7 @@ class KNN:
         """
         # Memorizzazione dei dati di test e allocazione dell'array delle predizioni
         self.x_test = np.array(x_test)
-        y_pred = np.zeros(self.x_test.shape[0])  # Shape: (numero campioni test)
+        y_pred = np.zeros(self.x_test.shape[0], dtype=int)  # Shape: (numero campioni test)
 
         # Matrice per memorizzare tutte le distanze tra ogni campione di test e ogni campione di training
         distances_tot = np.zeros((self.x_test.shape[0], self.x_train.shape[0]))  # Shape: (numero campioni test, numero campioni training)
@@ -98,14 +98,14 @@ class KNN:
             if np.sum(counts == np.max(counts)) > 1:
                 classes = values[counts == np.max(counts)]  # Seleziona solo le classi/etichette che hanno pareggiato
                 np.random.seed(42)
-                y_pred[i] = np.random.choice(classes)  # Viene scelta una classe/etichetta a caso tra quelle che pareggiano
+                y_pred[i] = int(np.random.choice(classes))  # Viene scelta una classe/etichetta a caso tra quelle che pareggiano
             else:
                 # Altrimenti viene assegnata la classe/etichetta con il numero massimo di occorrenze
-                y_pred[i] = values[np.argmax(counts)]
+                y_pred[i] = int(values[np.argmax(counts)])
 
         return y_pred
         
-    def predict_scores(self, x_test, positive_label=4):
+    def predict_scores(self, x_test, positive_label=1):
         """
         Calcola uno score continuo per ogni campione di test.
         Lo score è definito come la frazione di vicini appartenenti
@@ -113,7 +113,7 @@ class KNN:
 
         Parametri:
         x_test -> matrice dei campioni da testare
-        positive_label -> label della classe positiva (default = 4)
+        positive_label -> label della classe positiva 
 
         Restituisce:
         scores -> array di float in [0,1]
