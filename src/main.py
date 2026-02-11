@@ -34,25 +34,8 @@ from .evaluation.evaluation import (
     evaluate_model_kfold,
     evaluate_model_subsampling
 )
-from results.plots.plot import plot_metric_summary, plot_metric_distribution
+from progettoAI_gruppo7.results.plots.plot import plot_metric_summary, plot_metric_distribution
 
-
-def infer_columns(df: pd.DataFrame) -> Tuple[str, str, List[str]]:
-    """
-    Determina (id_col, label_col, feature_cols):
-    - prova prima nomi comuni
-    - altrimenti assume: prima colonna = id, ultima = label
-    """
-    cols = list(df.columns)
-
-    id_candidates = ["Sample code number", "sample_code_number", "ID", "id"]
-    label_candidates = ["Class", "class", "Label", "label", "Target", "target"]
-
-    id_col = next((c for c in id_candidates if c in cols), cols[0])
-    label_col = next((c for c in label_candidates if c in cols), cols[-1])
-
-    feature_cols = [c for c in cols if c not in (id_col, label_col)]
-    return id_col, label_col, feature_cols
 
 
 def save_json(out_path: Path, payload: dict) -> None:
@@ -70,8 +53,13 @@ def main() -> None:
     loader = get_loader(str(dataset_path))
     df = loader(str(dataset_path))
 
-    # 3) Colonne
-    id_col, label_col, feature_cols = infer_columns(df)
+    # 3) COLONNE
+    id_col = "Sample code number"
+    label_col = "classtype_v1"
+    feature_cols = ["Mitoses", "Normal Nucleoli", "Single Epithelial Cell Size", "uniformity_cellsize_xx",
+                    "clump_thickness_ty", "Marginal Adhesion", "Bland Chromatin", "Uniformity of Cell Shape",
+                    "bareNucleix_wrong"]
+
 
     # 4) RAW CLEANING (range, scala, decimali, duplicati, label valide)
     cleaner = RawDatasetCleaner(
@@ -81,7 +69,10 @@ def main() -> None:
         valid_min=1.0,
         valid_max=10.0
     )
+    print("Before cleaning:", df.shape)
     df_clean, cleaning_report = cleaner.clean(df)
+    print("After cleaning:", df_clean.shape)
+    print("Cleaning report:", cleaning_report)
 
     # 5) PREPROCESS (impute + scaling)
     pre = DataPreprocessor(feature_cols=feature_cols, label_col=label_col, do_scaling=True)
