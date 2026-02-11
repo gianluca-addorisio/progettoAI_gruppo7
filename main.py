@@ -1,17 +1,17 @@
 """
  Main:
 
-    1) Parsing degli argomenti da linea di comando (CLI)
-    2) Caricamento del dataset tramite factory in base all’estensione
-    3) Pulizia del dataset grezzo (range valori, duplicati, label valide, ecc.)
-    4) Preprocessing (imputazione, standardizzazione)
-    5) Codifica delle label in formato binario (0/1)
+    1) Parsing degli argomenti da linea di comando (CLI);
+    2) Caricamento del dataset tramite factory in base all’estensione;
+    3) Pulizia del dataset grezzo (range valori, duplicati, label valide, ecc.);
+    4) Preprocessing (imputazione, standardizzazione);
+    5) Codifica delle label in formato binario (0/1);
     6) Addestramento e valutazione del modello KNN secondo la modalità scelta:
           - holdout
           - B (k-fold cross validation)
           - C (random subsampling)
-    7) Calcolo delle metriche richieste
-    8) Salvataggio dei risultati e dei plot nella cartella "results/"
+    7) Calcolo delle metriche richieste;
+    8) Salvataggio dei risultati e dei plot nella cartella "results/".
 
 
 """
