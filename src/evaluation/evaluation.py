@@ -46,19 +46,19 @@ def evaluate_model_kfold(model, X, y, ids, metric_names, k=5, seed=42, positive_
 
         model.fit(X[train_mask], y[train_mask])
         y_pred = model.predict(X[test_mask]).astype(int)
-        y_score = model.predict_scores(X[test_mask]), positive_label=positive_label) if need_score else None
+        y_score = model.predict_scores(X[test_mask], positive_label=positive_label) if need_score else None
         
         results.append(
             evaluate_with_strategies(y[test_mask], y_pred, y_score, metrics, positive_label=positive_label))
     return aggregate_results(results)
 
 
-def evaluate_model_subsampling(model, X, y, ids, metric_names, r=30, test_size=0.3, see=42, positive_label=1):
+def evaluate_model_subsampling(model, X, y, ids, metric_names, r=30, test_size=0.3, seed=42, positive_label=1):
     """
     Valutazione con random subsampling (repeated holdout).
     """
     results = []
-    metrics = build_metrics_strategies(metric_names)
+    metrics = build_metric_strategies(metric_names)
     need_score = any(m.requires_score for m in metrics)
     
     unique_ids = np.unique(ids)
