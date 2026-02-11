@@ -150,7 +150,7 @@ class RawDatasetCleaner:
         X = c[self.feature_cols]
 
         # individuazione valori candidati alla correzione
-        invalid_num = (X > self.valid_max) & ((X % 10) == 0) & ((X / 10).between(self.valid_min, self.valid_max))
+        invalid_num = (X > self.valid_max) & ((X % 10) == 0) & ((X / 10) >= self.valid_min) & ((X / 10) <= self.valid_max)
 
         report["valori_scalati_10"] = int(invalid_num.to_numpy().sum())
         report["righe_con_valori_scalati"] = int(invalid_num.any(axis = 1).sum())
