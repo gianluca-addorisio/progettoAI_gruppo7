@@ -83,6 +83,7 @@ def aggregate_results(results):
     for key in results[0]:
         values = [r[key] for r in results]
         aggregated[key] = {
+            "values": values,
             "mean": float(np.mean(values)),
             "std": float(np.std(values))
         }
