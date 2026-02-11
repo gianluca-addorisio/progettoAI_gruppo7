@@ -22,14 +22,14 @@ import json
 from pathlib import Path
 from typing import Tuple, List
 
-import numpy as np
+#import numpy as np
 import pandas as pd
 
-from src.preprocessing.CLI_args import parse_args
-from src.dataset.dataset import get_loader
-from src.preprocessing.preprocessing import RawDatasetCleaner, DataPreprocessor, LabelEncoder
-from src.models.knn import KNN, EuclideanDistance
-from src.evaluation.evaluation import (
+from .preprocessing.CLI_args import parse_args
+from .dataset.dataset import get_loader
+from .preprocessing.preprocessing import RawDatasetCleaner, DataPreprocessor, LabelEncoder
+from .models.knn import KNN, EuclideanDistance
+from .evaluation.evaluation import (
     evaluate_model_holdout,
     evaluate_model_kfold,
     evaluate_model_subsampling
