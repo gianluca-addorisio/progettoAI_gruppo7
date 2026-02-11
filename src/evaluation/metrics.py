@@ -151,7 +151,7 @@ def auc_score(y_true, y_score, positive_label: int = 1) -> float:
     Calcola AUC come area sotto ROC (trapezi).
     """
     fpr, tpr, _ = roc_curve_binary(y_true, y_score, positive_label=positive_label)
-    return float(np.trapz(tpr, fpr))
+    return float(np.trapezoid(tpr, fpr))
 
 
 # ==========================================
