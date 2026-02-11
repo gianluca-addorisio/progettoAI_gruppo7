@@ -1,74 +1,91 @@
+"""
+Questo modulo contiene:
+1) Funzioni base per confusion matrix e metriche classiche (accuracy, sensitivity, etc.)
+2) Funzioni ROC/AUC (per label binarie 0/1)
+3) Implementazione di Strategy Pattern per le metriche:
+   - tutte le metriche espongono la stessa interfaccia: MetricStrategy.compute(...)
+   - alcune metriche richiedono solo (y_true, y_pred), AUC richiede anche y_score
+   - il main/evaluation può selezionare metriche via stringhe senza if/else sparsi
+
+Assunzioni
+----------
+Label binarie:
+- 0 = benigno (negativo)
+- 1 = maligno (positivo)
+"""
+
+from __future__ import annotations
 import numpy as np
-
-# ============================================================
-# NOTE:
-# Questo progetto utilizza label {2, 4} come specificato
-# nella traccia:
-#   - 2 = benigno
-#   - 4 = maligno (classe positiva)
-#
-# Tutte le metriche seguenti sono quindi definite in modo
-# coerente rispetto a questa codifica.
-# ============================================================
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Dict, Iterable, List, Optional, Tuple
 
 
-def confusion_matrix_binary(y_true, y_pred, positive_label=4):
+# ==============================
+# 1) FUNZIONI BASE 
+# ==============================
+
+def confusion_matrix_binary(y_true, y_pred, positive_label: int = 1) -> Tuple[int, int, int, int]:
     """
-    Calcola i valori della confusion matrix binaria per il dataset.
+    Confusion matrix binaria: TP, FP, TN, FN.
 
     Parametri:
-    - y_true: array delle etichette reali (2 o 4)
-    - y_pred: array delle etichette predette (2 o 4)
-    - positive_label: label considerata positiva (default = 4)
+    - y_true: etichette vere (0/1)
+    - y_pred: etichette predette (0/1)
+    - positive_label: classe positiva (default=1)
 
-    Restituisce:
+    Ritorna:
     - TP, FP, TN, FN
     """
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
 
-    TP = np.sum((y_true == positive_label) & (y_pred == positive_label))
-    TN = np.sum((y_true != positive_label) & (y_pred != positive_label))
-    FP = np.sum((y_true != positive_label) & (y_pred == positive_label))
-    FN = np.sum((y_true == positive_label) & (y_pred != positive_label))
+    TP = int(np.sum((y_true == positive_label) & (y_pred == positive_label)))
+    TN = int(np.sum((y_true != positive_label) & (y_pred != positive_label)))
+    FP = int(np.sum((y_true != positive_label) & (y_pred == positive_label)))
+    FN = int(np.sum((y_true == positive_label) & (y_pred != positive_label)))
 
     return TP, FP, TN, FN
 
 
-def accuracy_rate(TP, FP, TN, FN):
-    return (TP + TN) / (TP + FP + TN + FN)
+def accuracy_rate(TP: int, FP: int, TN: int, FN: int) -> float:
+    den = TP + FP + TN + FN
+    return (TP + TN) / den if den > 0 else 0.0
 
 
-def error_rate(TP, FP, TN, FN):
-    return (FP + FN) / (TP + FP + TN + FN)
+def error_rate(TP: int, FP: int, TN: int, FN: int) -> float:
+    den = TP + FP + TN + FN
+    return (FP + FN) / den if den > 0 else 0.0
 
 
-def sensitivity(TP, FN):
-    """Recall della classe positiva (maligno)."""
-    return TP / (TP + FN) if (TP + FN) > 0 else 0.0
+def sensitivity(TP: int, FN: int) -> float:
+    """Recall della classe positiva."""
+    den = TP + FN
+    return TP / den if den > 0 else 0.0
 
 
-def specificity(TN, FP):
-    """Recall della classe negativa (benigno)."""
-    return TN / (TN + FP) if (TN + FP) > 0 else 0.0
+def specificity(TN: int, FP: int) -> float:
+    """Recall della classe negativa."""
+    den = TN + FP
+    return TN / den if den > 0 else 0.0
 
 
-def geometric_mean(sens, spec):
-    return np.sqrt(sens * spec)
+def geometric_mean(sens: float, spec: float) -> float:
+    return float(np.sqrt(sens * spec))
 
 
-def evaluate_classification(y_true, y_pred):
+def evaluate_classification(y_true, y_pred, positive_label: int = 1) -> Dict[str, float]:
     """
-    Valuta il classificatore secondo le metriche richieste dalla traccia.
+    Valuta il classificatore con metriche base richieste tipicamente dal progetto.
 
-    Restituisce:
+    Ritorna:
     - accuracy
     - error_rate
     - sensitivity
     - specificity
-    - geometric mean
+    - gmean
     """
-    TP, FP, TN, FN = confusion_matrix_binary(y_true, y_pred)
+    TP, FP, TN, FN = confusion_matrix_binary(y_true, y_pred, positive_label=positive_label)
 
     acc = accuracy_rate(TP, FP, TN, FN)
     err = error_rate(TP, FP, TN, FN)
@@ -84,72 +101,201 @@ def evaluate_classification(y_true, y_pred):
         "gmean": gmean
     }
 
-def _roc_curve_binary(y_true, y_score, positive_label=4):
+
+# ==============================
+# 2) ROC / AUC (score continuo)
+# ==============================
+
+def roc_curve_binary(y_true, y_score, positive_label: int = 1) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Costruisce la curva ROC (FPR, TPR) per un classificatore binario.
+    Costruisce ROC (FPR, TPR) usando soglie uniche dello score.
 
     Parametri:
-    - y_true: etichette vere {2,4}
-    - y_score: score continuo (es. frazione di vicini maligni)
-    - positive_label: label positiva (default = 4)
+    - y_true: etichette vere (0/1)
+    - y_score: score continuo in [0,1] (es. frazione di vicini positivi del KNN)
+    - positive_label: classe positiva (default=1)
 
-    Restituisce:
-    - fpr: array False Positive Rate
-    - tpr: array True Positive Rate
+    Ritorna:
+    - fpr, tpr, thresholds
     """
     y_true = np.asarray(y_true)
-    y_score = np.asarray(y_score)
+    y_score = np.asarray(y_score, dtype=float)
 
-    # Converto le etichette in binarie: 1 = positivo, 0 = negativo
     y_true_bin = (y_true == positive_label).astype(int)
 
-    # Ordino i punti per score decrescente
-    order = np.argsort(-y_score)
-    y_true_bin = y_true_bin[order]
+    P = int(np.sum(y_true_bin))
+    N = int(len(y_true_bin) - P)
+    if P == 0 or N == 0:
+        raise ValueError("ROC non definibile: manca una classe (P=0 o N=0).")
 
-    # Numero totale di positivi e negativi
-    P = np.sum(y_true_bin)
-    N = len(y_true_bin) - P
+    thresholds = np.unique(y_score)[::-1]
+    thresholds = np.r_[np.inf, thresholds, -np.inf]
 
-    TPR = []
-    FPR = []
+    tpr = []
+    fpr = []
 
-    tp = 0
-    fp = 0
+    for thr in thresholds:
+        y_pred_pos = (y_score >= thr)
 
-    # Scorro la soglia implicitamente
-    for label in y_true_bin:
-        if label == 1:
-            tp += 1
-        else:
-            fp += 1
+        TP = int(np.sum(y_pred_pos & (y_true_bin == 1)))
+        FP = int(np.sum(y_pred_pos & (y_true_bin == 0)))
 
-        TPR.append(tp / P if P > 0 else 0.0)
-        FPR.append(fp / N if N > 0 else 0.0)
+        tpr.append(TP / P)
+        fpr.append(FP / N)
 
-    # Aggiungo punto (0,0) all'inizio
-    TPR = np.array([0.0] + TPR)
-    FPR = np.array([0.0] + FPR)
-
-    return FPR, TPR
+    return np.array(fpr), np.array(tpr), thresholds
 
 
-def auc_score(y_true, y_score, positive_label=4):
+def auc_score(y_true, y_score, positive_label: int = 1) -> float:
     """
-    Calcola l'AUC (Area Under the ROC Curve).
-
-    Parametri:
-    - y_true: etichette vere {2,4}
-    - y_score: score continuo ∈ [0,1]
-
-    Restituisce:
-    - auc: valore AUC
+    Calcola AUC come area sotto ROC (trapezi).
     """
-    fpr, tpr = _roc_curve_binary(y_true, y_score, positive_label)
+    fpr, tpr, _ = roc_curve_binary(y_true, y_score, positive_label=positive_label)
+    return float(np.trapz(tpr, fpr))
 
-    # Area sotto la curva ROC (regola dei trapezi)
-    auc = np.trapz(tpr, fpr)
 
-    return auc
+# ==========================================
+# 3) STRATEGY PATTERN PER SELEZIONE METRICHE
+# ==========================================
+
+@dataclass(frozen=True)
+class MetricResult:
+    name: str
+    value: float
+
+
+class MetricStrategy(ABC):
+    """
+    Strategy Pattern per le metriche.
+
+    Idea:
+    - Tutte le metriche condividono la stessa interfaccia compute(...)
+    - Alcune metriche richiedono solo y_true/y_pred
+    - Altre (es. ROC) richiedono anche y_score (score continuo)
+    """
+    name: str
+
+    @property
+    def requires_score(self) -> bool:
+        """True se la metrica richiede y_score (es. AUC)."""
+        return False
+
+    @abstractmethod
+    def compute(
+        self,
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+        y_score: Optional[np.ndarray] = None,
+        positive_label: int = 1
+    ) -> float:
+        raise NotImplementedError
+
+
+class AccuracyMetric(MetricStrategy):
+    name = "accuracy"
+
+    def compute(self, y_true, y_pred, y_score=None, positive_label: int = 1) -> float:
+        TP, FP, TN, FN = confusion_matrix_binary(y_true, y_pred, positive_label=positive_label)
+        return accuracy_rate(TP, FP, TN, FN)
+
+
+class ErrorRateMetric(MetricStrategy):
+    name = "error_rate"
+
+    def compute(self, y_true, y_pred, y_score=None, positive_label: int = 1) -> float:
+        TP, FP, TN, FN = confusion_matrix_binary(y_true, y_pred, positive_label=positive_label)
+        return error_rate(TP, FP, TN, FN)
+
+
+class SensitivityMetric(MetricStrategy):
+    name = "sensitivity"
+
+    def compute(self, y_true, y_pred, y_score=None, positive_label: int = 1) -> float:
+        TP, FP, TN, FN = confusion_matrix_binary(y_true, y_pred, positive_label=positive_label)
+        return sensitivity(TP, FN)
+
+
+class SpecificityMetric(MetricStrategy):
+    name = "specificity"
+
+    def compute(self, y_true, y_pred, y_score=None, positive_label: int = 1) -> float:
+        TP, FP, TN, FN = confusion_matrix_binary(y_true, y_pred, positive_label=positive_label)
+        return specificity(TN, FP)
+
+
+class GMeanMetric(MetricStrategy):
+    name = "gmean"
+
+    def compute(self, y_true, y_pred, y_score=None, positive_label: int = 1) -> float:
+        TP, FP, TN, FN = confusion_matrix_binary(y_true, y_pred, positive_label=positive_label)
+        sens = sensitivity(TP, FN)
+        spec = specificity(TN, FP)
+        return geometric_mean(sens, spec)
+
+
+class AUROCMetric(MetricStrategy):
+    name = "auc"
+
+    @property
+    def requires_score(self) -> bool:
+        return True
+
+    def compute(self, y_true, y_pred, y_score=None, positive_label: int = 1) -> float:
+        if y_score is None:
+            raise ValueError("AUROCMetric richiede y_score (score continuo).")
+        return auc_score(y_true, y_score, positive_label=positive_label)
+
+
+# Registro minimale delle metriche disponibili.
+_METRIC_REGISTRY: Dict[str, MetricStrategy] = {
+    "accuracy": AccuracyMetric(),
+    "error_rate": ErrorRateMetric(),
+    "sensitivity": SensitivityMetric(),
+    "specificity": SpecificityMetric(),
+    "gmean": GMeanMetric(),
+    "auc": AUROCMetric(),
+}
+
+
+def build_metric_strategies(metric_names: Iterable[str]) -> List[MetricStrategy]:
+    """
+    Crea la lista di metriche (Strategy) a partire da nomi stringa.
+
+    Supporta:
+    - ["all"] -> tutte
+    - lista esplicita -> solo quelle richieste
+    """
+    names = [m.strip().lower() for m in metric_names]
+    if len(names) == 1 and names[0] == "all":
+        return list(_METRIC_REGISTRY.values())
+
+    strategies = []
+    for n in names:
+        if n not in _METRIC_REGISTRY:
+            raise ValueError(f"Metrica non supportata: '{n}'. Supportate: {list(_METRIC_REGISTRY.keys())} o 'all'.")
+        strategies.append(_METRIC_REGISTRY[n])
+    return strategies
+
+
+def evaluate_with_strategies(
+    y_true,
+    y_pred,
+    y_score: Optional[np.ndarray],
+    metrics: List[MetricStrategy],
+    positive_label: int = 1
+) -> Dict[str, float]:
+    """
+    Valuta un set di metriche Strategy in modo uniforme.
+
+    - Se una metrica richiede score e y_score è None -> errore (scelta intenzionale: evita risultati sbagliati).
+    """
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+    y_score_arr = None if y_score is None else np.asarray(y_score, dtype=float)
+
+    out: Dict[str, float] = {}
+    for m in metrics:
+        out[m.name] = float(m.compute(y_true, y_pred, y_score=y_score_arr, positive_label=positive_label))
+    return out
 
 

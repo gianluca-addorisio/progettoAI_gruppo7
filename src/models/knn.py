@@ -38,6 +38,8 @@ class KNN:
         k -> inizializza il numero di vicini da considerare
         distance_strategy -> inizializza il tipo di distanza da utilizzare
         """
+        if k < 1:
+            raise ValueError("Il valore di k deve essere almeno 1.")
         self.k = k
         self.distance_strategy = distance_strategy
         self.x_train = None
@@ -50,6 +52,12 @@ class KNN:
         x_train -> matrice delle features del training set
         y_train -> array delle classi/etichette corrispondenti
         """
+        # Controllo di sicurezza finale
+        n_samples = x_train.shape[0]
+        if self.k > n_samples:
+            raise ValueError(
+                f"k={self.k} è maggiore del numero di campioni disponibili ({n_samples})."
+            )
         # Memorizzazione dei dati di training
         self.x_train = np.array(x_train)
         self.y_train = np.array(y_train)
@@ -64,7 +72,7 @@ class KNN:
         """
         # Memorizzazione dei dati di test e allocazione dell'array delle predizioni
         self.x_test = np.array(x_test)
-        y_pred = np.zeros(self.x_test.shape[0])  # Shape: (numero campioni test)
+        y_pred = np.zeros(self.x_test.shape[0], dtype=int)  # Shape: (numero campioni test)
 
         # Matrice per memorizzare tutte le distanze tra ogni campione di test e ogni campione di training
         distances_tot = np.zeros((self.x_test.shape[0], self.x_train.shape[0]))  # Shape: (numero campioni test, numero campioni training)
@@ -89,14 +97,15 @@ class KNN:
             # Se più classi/etichette hanno lo stesso numero massimo di occorrenze avremo che la somma sarà > 1
             if np.sum(counts == np.max(counts)) > 1:
                 classes = values[counts == np.max(counts)]  # Seleziona solo le classi/etichette che hanno pareggiato
-                y_pred[i] = np.random.choice(classes)  # Viene scelta una classe/etichetta a caso tra quelle che pareggiano
+                np.random.seed(42)
+                y_pred[i] = int(np.random.choice(classes))  # Viene scelta una classe/etichetta a caso tra quelle che pareggiano
             else:
                 # Altrimenti viene assegnata la classe/etichetta con il numero massimo di occorrenze
-                y_pred[i] = values[np.argmax(counts)]
+                y_pred[i] = int(values[np.argmax(counts)])
 
         return y_pred
         
-    def predict_scores(self, x_test, positive_label=4):
+    def predict_scores(self, x_test, positive_label=1):
         """
         Calcola uno score continuo per ogni campione di test.
         Lo score è definito come la frazione di vicini appartenenti
@@ -104,7 +113,7 @@ class KNN:
 
         Parametri:
         x_test -> matrice dei campioni da testare
-        positive_label -> label della classe positiva (default = 4)
+        positive_label -> label della classe positiva 
 
         Restituisce:
         scores -> array di float in [0,1]
