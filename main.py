@@ -34,7 +34,7 @@ from src.evaluation.evaluation import (
     evaluate_model_kfold,
     evaluate_model_subsampling
 )
-from src.evaluation.plots import plot_metric_summary, plot_metric_distribution
+from results.plots.plot import plot_metric_summary, plot_metric_distribution
 
 
 def infer_columns(df: pd.DataFrame) -> Tuple[str, str, List[str]]:
@@ -162,6 +162,17 @@ def main() -> None:
     }
     save_json(Path("results") / "results.json", payload)
     print("\n[OK] Salvato: results/results.json")
+
+    # Plot solo delle metriche richieste (se "all" → tutte)
+    metriche_da_plottare = results.keys()
+
+    outdir = Path("results")
+
+    for m in metriche_da_plottare:
+        plot_metric_summary(results, m, outdir)
+        plot_metric_distribution(results, m, outdir)
+
+    print("\n[OK] Plot salvati in results/")
 
 
 if __name__ == "__main__":
