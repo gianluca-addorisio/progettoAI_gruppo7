@@ -76,6 +76,7 @@ Sono state adottate le seguenti operazioni per garantire correttezza sperimental
 
 Con Docker:
 
+Spostarsi nella cartella del progetto
 ```bash
 docker build -t gruppo7-knn .
 ```
