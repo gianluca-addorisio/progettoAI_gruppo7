@@ -79,19 +79,19 @@ Con Docker:
 ```bash
 docker build -t gruppo7-knn .
 ```
-build: ordina a Docker di creare l'immagine seguendo il Dockerfile
--t gruppo7-knn: assegna un nome all'immagine
-.: Docker cercherà il Dockerfile qui
+"build": ordina a Docker di creare l'immagine seguendo il Dockerfile  
+"-t gruppo7-knn": assegna un nome all'immagine  
+".": Docker cercherà il Dockerfile qui
 
 ```bash
 docker run \-v "$(pwd)/data/raw:/app/data/raw" \-v "$(pwd)/results:/app/results" \gruppo7-knn <modalità> [parametri]
 ```
-run: dice a Docker di creare e avviare un nuovo contenitore basato su un'immagine specifica
-$(pwd)/data/raw: è il percorso sul computer reale, dove $(pwd) identifica la cartella attuale
-:/app/data/raw: è il percorso "virtuale" dentro il container
-Quindi il programma dentro Docker vedrà il dataset come se fosse al suo interno, ma in realtà lo sta leggendo dalla cartella reale
-\-v "$(pwd)/results:/app/results: quando lo script salva un grafico o un report in /app/results, quel file apparirà nella cartella reale
-\gruppo7-knn: è il nome dell'immagine che è stata costruita con il comando build. Contiene Python e tutte le librerie (pandas, numpy, ecc.)
+"run": dice a Docker di creare e avviare un nuovo contenitore basato su un'immagine specifica  
+"$(pwd)/data/raw": è il percorso sul computer reale, dove $(pwd) identifica la cartella attuale  
+":/app/data/raw": è il percorso "virtuale" dentro il container  
+Quindi il programma dentro Docker vedrà il dataset come se fosse al suo interno, ma in realtà lo sta leggendo dalla cartella reale  
+"\-v "$(pwd)/results:/app/results": quando lo script salva un grafico o un report in /app/results, quel file apparirà nella cartella reale  
+"\gruppo7-knn": è il nome dell'immagine che è stata costruita con il comando build. Contiene Python e tutte le librerie (pandas, numpy, ecc.)
 
 ### Esempi di "docker run"
 
