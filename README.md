@@ -126,7 +126,7 @@ docker run \-v "$(pwd)/data/raw:/app/data/raw" \-v "$(pwd)/results:/app/results"
 In questo esempio k = 5, K = 10 indica il numero di ripetizioni, test_size = 0.3 viene applicato a ogni ripetizione e vengono calcolate tutte le metriche disponibili.
 
 ---
-Con ambiente virtuale:
+Con ambiente virtuale:  
 Creare, attivare l’ambiente virtuale e installare le dipendenze:
 
 Spostati nella cartella del progetto e crea il venv:
