@@ -76,14 +76,17 @@ Sono state adottate le seguenti operazioni per garantire correttezza sperimental
 
 Creare, attivare l’ambiente virtuale e installare le dipendenze:
 
+Spostati nella cartella del progetto e crea il venv:
 ```bash
 python3 -m venv venv
 ```
 
+Attivazione:
 ```bash
 source venv/bin/activate
 ```
 
+Installazione dipendenze:
 ```bash
 pip install -r requirements.txt
 ```
