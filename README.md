@@ -260,6 +260,7 @@ Attualmente risultano implementati:
 - Sistema modulare per il calcolo delle metriche tramite Strategy Pattern
 - Generazione automatica di file di output e grafici
 - Test automatici per verifica di split e metriche
+- Dockerfile per esecuzione con docker
 
 La struttura del repository è organizzata in modo modulare e versionata tramite Git.
 
