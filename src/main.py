@@ -38,6 +38,7 @@ from .evaluation.evaluation import (
 )
 from .evaluation.plot import plot_metric_summary, plot_metric_distribution
 
+
 def save_json(out_path: Path, payload: dict) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
@@ -59,7 +60,6 @@ def main() -> None:
     feature_cols = ["Mitoses", "Normal Nucleoli", "Single Epithelial Cell Size", "uniformity_cellsize_xx",
                     "clump_thickness_ty", "Marginal Adhesion", "Bland Chromatin", "Uniformity of Cell Shape",
                     "bareNucleix_wrong"]
-
 
     # 4) RAW CLEANING (range, scala, decimali, duplicati, label valide)
     cleaner = RawDatasetCleaner(
@@ -113,7 +113,6 @@ def main() -> None:
         y_pred_holdout = holdout_out["y_pred"]
         y_score_holdout = holdout_out["y_score"]
 
-
     elif ns.eval_mode == "B":
         results = evaluate_model_kfold(
             model=model,
@@ -141,6 +140,36 @@ def main() -> None:
 
     else:
         raise SystemExit(f"Modalità non riconosciuta: {ns.eval_mode}")
+
+    # --- Confronto Holdout vs Media K-Fold (solo se eval_mode == "B") ---
+    if ns.eval_mode == "B":
+        # Holdout "di riferimento" per confronto (test_size fisso a 0.3)
+        model_holdout = KNN(k=ns.k_neighbors, distance_strategy=EuclideanDistance())
+        holdout_out_cmp = evaluate_model_holdout(
+            model=model_holdout,
+            X=X,
+            y=y,
+            ids=ids,
+            metric_names=metric_names,
+            test_size=0.3,
+            seed=seed,
+            positive_label=positive_label
+        )
+        holdout_metrics = holdout_out_cmp["metrics"]
+
+        print("\n=== Confronto Holdout vs Media K-Fold ===")
+        for metric, agg in results.items():
+            if isinstance(agg, dict) and "mean" in agg and metric in holdout_metrics:
+                kfold_mean = agg["mean"]
+                holdout_value = holdout_metrics[metric]
+                try:
+                    print(f"{metric}:")
+                    print(f"  Holdout      = {float(holdout_value):.4f}")
+                    print(f"  K-Fold mean  = {float(kfold_mean):.4f}")
+                    print(f"  Differenza   = {float(kfold_mean) - float(holdout_value):.4f}")
+                except (TypeError, ValueError):
+                    # Se qualche metrica non è numerica, salta senza rompere l'esecuzione
+                    continue
 
     # 10) Output a video
     print("\nCleaning Report:")
@@ -183,9 +212,9 @@ def main() -> None:
     if ns.eval_mode == "holdout" and y_score_holdout is not None:
         fpr, tpr, _ = roc_curve_binary(y_true_holdout, y_score_holdout)
 
-        plt.figure(figsize=(6,5))
+        plt.figure(figsize=(6, 5))
         plt.plot(fpr, tpr, label=f"AUC = {results['auc']:.3f}")
-        plt.plot([0,1], [0,1], linestyle="--")
+        plt.plot([0, 1], [0, 1], linestyle="--")
         plt.xlabel("False Positive Rate")
         plt.ylabel("True Positive Rate")
         plt.title("ROC Curve (Holdout)")
@@ -210,26 +239,26 @@ def main() -> None:
 
             cm = np.array([[TN, FP],
                            [FN, TP]])
-            
+
             # Percentuali per riga (normalizzazione su true label)
             row_sums = cm.sum(axis=1, keepdims=True)
             cm_percent = cm / row_sums * 100
 
-            plt.figure(figsize=(6,5))
+            plt.figure(figsize=(6, 5))
             im = plt.imshow(cm, cmap="Blues")
 
             plt.title("Confusion Matrix (Holdout)", fontsize=12)
             plt.colorbar(im, fraction=0.046, pad=0.04)
 
-            plt.xticks([0,1], ["Pred 0 (Benigno)", "Pred 1 (Maligno)"])
-            plt.yticks([0,1], ["True 0 (Beningo)", "True 1 (Maligno)"])
+            plt.xticks([0, 1], ["Pred 0 (Benigno)", "Pred 1 (Maligno)"])
+            plt.yticks([0, 1], ["True 0 (Beningo)", "True 1 (Maligno)"])
 
             # Scrittura valori dentro celle
             for i in range(2):
                 for j in range(2):
                     value = cm[i, j]
                     perc = cm_percent[i, j]
-                    text_color = "white" if value > cm.max()/2 else "black"
+                    text_color = "white" if value > cm.max() / 2 else "black"
 
                     plt.text(
                         j, i,
@@ -247,7 +276,7 @@ def main() -> None:
             plots_dir = results_dir / "plots"
             plots_dir.mkdir(parents=True, exist_ok=True)
 
-            plt.savefig(plots_dir / "confusion_matrix.png", dpi=300)            
+            plt.savefig(plots_dir / "confusion_matrix.png", dpi=300)
             plt.close()
 
             print("[OK] Confusion Matrix salvata in results/plots/")
