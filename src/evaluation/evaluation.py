@@ -18,12 +18,22 @@ def evaluate_model_holdout(model, X, y, ids, metric_names, test_size=0.3, seed=4
 
     model.fit(X_tr, y_tr)
     y_pred = model.predict(X_te).astype(int)
-    
-    #Score continuo per AUC 
+
     metrics = build_metric_strategies(metric_names)
     need_score = any(m.requires_score for m in metrics)
     y_score = model.predict_scores(X_te, positive_label=positive_label) if need_score else None
-    return evaluate_with_strategies(y_te, y_pred, y_score, metrics, positive_label=positive_label)
+
+    results = evaluate_with_strategies(
+        y_te, y_pred, y_score, metrics, positive_label=positive_label
+    )
+
+    return {
+        "metrics": results,
+        "y_true": y_te,
+        "y_pred": y_pred,
+        "y_score": y_score
+    }
+
 
 
 def evaluate_model_kfold(model, X, y, ids, metric_names, k=5, seed=42, positive_label=1):

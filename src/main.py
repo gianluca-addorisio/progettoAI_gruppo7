@@ -22,8 +22,10 @@ import json
 from pathlib import Path
 from typing import Tuple, List
 
-#import numpy as np
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from .evaluation.metrics import roc_curve_binary
 
 from .preprocessing.CLI_args import parse_args
 from .dataset.dataset import get_loader
@@ -34,9 +36,7 @@ from .evaluation.evaluation import (
     evaluate_model_kfold,
     evaluate_model_subsampling
 )
-from progettoAI_gruppo7.results.plots.plot import plot_metric_summary, plot_metric_distribution
-
-
+from .evaluation.plot import plot_metric_summary, plot_metric_distribution
 
 def save_json(out_path: Path, payload: dict) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -97,7 +97,7 @@ def main() -> None:
     seed = 42
 
     if ns.eval_mode == "holdout":
-        results = evaluate_model_holdout(
+        holdout_out = evaluate_model_holdout(
             model=model,
             X=X,
             y=y,
@@ -107,6 +107,12 @@ def main() -> None:
             seed=seed,
             positive_label=positive_label
         )
+
+        results = holdout_out["metrics"]
+        y_true_holdout = holdout_out["y_true"]
+        y_pred_holdout = holdout_out["y_pred"]
+        y_score_holdout = holdout_out["y_score"]
+
 
     elif ns.eval_mode == "B":
         results = evaluate_model_kfold(
@@ -151,21 +157,101 @@ def main() -> None:
         "cleaning_report": cleaning_report,
         "results": results
     }
-    save_json(Path("../results") / "results.json", payload)
+
+    # Directory base del progetto
+    base_dir = Path(__file__).resolve().parent.parent
+    results_dir = base_dir / "results"
+
+    # Salvataggio JSON
+    save_json(results_dir / "results.json", payload)
     print("\n[OK] Salvato: results/results.json")
 
-    # Plot solo delle metriche richieste (se "all" → tutte)
+    # Plot solo delle metriche richieste
     metriche_da_plottare = results.keys()
+    is_holdout = ns.eval_mode == "holdout"
 
-    outdir = Path("../results")
+    outdir = results_dir
 
     for m in metriche_da_plottare:
         plot_metric_summary(results, m, outdir)
-        plot_metric_distribution(results, m, outdir)
+        if not is_holdout:
+            plot_metric_distribution(results, m, outdir)
 
     print("\n[OK] Plot salvati in results/")
+
+    # ROC curve SOLO per holdout (al momento, poi ampliamo per B e C)
+    if ns.eval_mode == "holdout" and y_score_holdout is not None:
+        fpr, tpr, _ = roc_curve_binary(y_true_holdout, y_score_holdout)
+
+        plt.figure(figsize=(6,5))
+        plt.plot(fpr, tpr, label=f"AUC = {results['auc']:.3f}")
+        plt.plot([0,1], [0,1], linestyle="--")
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.title("ROC Curve (Holdout)")
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.tight_layout()
+        plots_dir = results_dir / "plots"
+        plots_dir.mkdir(parents=True, exist_ok=True)
+
+        plt.savefig(plots_dir / "roc_curve.png")
+        plt.close()
+
+        print("[OK] ROC salvata in results/plots/")
+
+        from .evaluation.metrics import confusion_matrix_binary
+        if ns.eval_mode == "holdout":
+            TP, FP, TN, FN = confusion_matrix_binary(
+                y_true_holdout,
+                y_pred_holdout,
+                positive_label=positive_label
+            )
+
+            cm = np.array([[TN, FP],
+                           [FN, TP]])
+            
+            # Percentuali per riga (normalizzazione su true label)
+            row_sums = cm.sum(axis=1, keepdims=True)
+            cm_percent = cm / row_sums * 100
+
+            plt.figure(figsize=(6,5))
+            im = plt.imshow(cm, cmap="Blues")
+
+            plt.title("Confusion Matrix (Holdout)", fontsize=12)
+            plt.colorbar(im, fraction=0.046, pad=0.04)
+
+            plt.xticks([0,1], ["Pred 0 (Benigno)", "Pred 1 (Maligno)"])
+            plt.yticks([0,1], ["True 0 (Beningo)", "True 1 (Maligno)"])
+
+            # Scrittura valori dentro celle
+            for i in range(2):
+                for j in range(2):
+                    value = cm[i, j]
+                    perc = cm_percent[i, j]
+                    text_color = "white" if value > cm.max()/2 else "black"
+
+                    plt.text(
+                        j, i,
+                        f"{value}\n({perc:.1f}%)",
+                        ha="center",
+                        va="center",
+                        color=text_color,
+                        fontsize=11
+                    )
+
+            plt.ylabel("Classe Reale")
+            plt.xlabel("Classe Predetta")
+            plt.tight_layout()
+
+            plots_dir = results_dir / "plots"
+            plots_dir.mkdir(parents=True, exist_ok=True)
+
+            plt.savefig(plots_dir / "confusion_matrix.png", dpi=300)            
+            plt.close()
+
+            print("[OK] Confusion Matrix salvata in results/plots/")
 
 
 if __name__ == "__main__":
     main()
-
