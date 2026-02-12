@@ -1,17 +1,22 @@
 # Definisce l'immagine di base e usa una versione leggera di Python 3.10
-FROM python:3.10-slim 
+FROM python:3.11-slim 
 
 # Imposta la cartella di lavoro(app) nel container 
 WORKDIR /app  
 
 # Installazione dipendenze
-COPY requirements.txt .  # Copia il file requirements nella cartella corrente del container (.)
-RUN pip install -r requirements.txt  # Installazione librere
+# Copia il file requirements nella cartella corrente del container (.)
+COPY requirements.txt .  
 
-COPY . .  # Copia tutto il resto del progetto (cartelle, main, ecc.)
+# Installazione librere
+RUN pip install -r requirements.txt  
+
+# Copia tutto il resto del progetto (cartelle, main, ecc.)
+COPY . .  
 
 # Crea la struttura delle cartelle per l'input e l'output
-RUN mkdir -p /app/data/raw /app/results/plots  # -p serve a creare anche le sottocartelle
+# -p serve a creare anche le sottocartelle
+RUN mkdir -p /app/data/raw /app/results/plots  
 
 # Permessi di scrittura per tutta la cartella results (da inserire?)
 RUN chmod -R 777 /app/results
