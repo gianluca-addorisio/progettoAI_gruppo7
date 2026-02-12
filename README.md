@@ -74,7 +74,15 @@ Sono state adottate le seguenti operazioni per garantire correttezza sperimental
 
 ## Esecuzione
 
-Attivare l’ambiente virtuale e installare le dipendenze:
+Creare, attivare l’ambiente virtuale e installare le dipendenze:
+
+```bash
+python3 -m venv venv
+```
+
+```bash
+source venv/bin/activate
+```
 
 ```bash
 pip install -r requirements.txt
@@ -83,7 +91,7 @@ pip install -r requirements.txt
 Il programma deve essere eseguito come modulo Python dalla directory principale del progetto:
 
 ```bash
-python -m src.main <modalita> [parametri]
+python3 -m src.main <modalita> [parametri]
 ```
 
 ### Esempi di esecuzione
@@ -95,7 +103,7 @@ Il programma viene eseguito da linea di comando specificando la modalità di val
 Suddivisione del dataset in training e test set secondo una percentuale specificata.
 
 ```bash
-python -m src.main holdout --dataset data/raw/version_1.csv --k 5 --test_size 0.3 --metriche all
+python3 -m src.main holdout --dataset data/raw/version_1.csv --k 5 --test_size 0.3 --metriche all
 ```
 
 In questo esempio k = 5, test_size = 0.3 (30% dei dati utilizzati per il test) e vengono calcolate tutte le metriche disponibili.
@@ -105,7 +113,7 @@ In questo esempio k = 5, test_size = 0.3 (30% dei dati utilizzati per il test) e
 Esecuzione della validazione incrociata con K fold.
 
 ```bash
-python -m src.main B --dataset data/raw/version_1.csv --k 5 --K 5 --metriche accuracy auc
+python3 -m src.main B --dataset data/raw/version_1.csv --k 5 --K 5 --metriche accuracy auc
 ```
 
 In questo caso k = 5 indica il numero di vicini del classificatore, K = 5 indica il numero di fold e vengono calcolate solo le metriche accuracy e auc.
@@ -115,7 +123,7 @@ In questo caso k = 5 indica il numero di vicini del classificatore, K = 5 indica
 Esecuzione di più esperimenti di holdout (repeated holdout).
 
 ```bash
-python -m src.main C --dataset data/raw/version_1.csv --k 5 --K 10 --test_size 0.3 --metriche all
+python3 -m src.main C --dataset data/raw/version_1.csv --k 5 --K 10 --test_size 0.3 --metriche all
 ```
 
 In questo esempio k = 5, K = 10 indica il numero di ripetizioni, test_size = 0.3 viene applicato a ogni ripetizione e vengono calcolate tutte le metriche disponibili.
@@ -176,7 +184,7 @@ In particolare vengono testati:
 Per eseguire i test dalla directory principale del progetto:
 
 ```bash
-python -m unittest discover tests
+python3 -m unittest discover tests
 ```
 
 Il superamento dei test garantisce la correttezza logica delle funzioni di validazione e valutazione implementate.
