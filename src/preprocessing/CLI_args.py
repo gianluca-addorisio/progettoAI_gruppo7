@@ -140,9 +140,10 @@ def validate_args(ns):
     # validazione metriche inserite
     ns.metriche = validate_metrics(ns.metriche)
 
-    # validazione test-size in holdout
-    if ns.test_size < 0 or ns.test_size > 1:
-        raise SystemExit("Errore: --test_size deve essere compreso tra 0 e 1")
+    # validazione test-size solo quando esiste
+    if hasattr(ns, "test_size"):
+        if ns.test_size < 0 or ns.test_size > 1:
+            raise SystemExit("Errore: --test_size deve essere compreso tra 0 e 1")
 
     # validazione k_folds nel k-fold cross validation; è opportuno avere un numero superiore a 2
     if ns.eval_mode == "B":
@@ -176,6 +177,9 @@ def parse_args():
     parser = build_parser()
     ns = parser.parse_args()
     return validate_args(ns)
+
+
+
 
 
 
