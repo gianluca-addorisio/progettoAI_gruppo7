@@ -5,15 +5,19 @@ FROM python:3.10-slim
 WORKDIR /app  
 
 # Installazione dipendenze
-COPY requirements.txt .  # Copia il file requirements nella cartella corrente del container (.)
-RUN pip install -r requirements.txt  # Installazione librere
+# Copia il file requirements nella cartella corrente del container (.)
+# Installazione librere
+COPY requirements.txt .  
+RUN pip install -r requirements.txt  
 
-COPY . .  # Copia tutto il resto del progetto (cartelle, main, ecc.)
+# Copia tutto il resto del progetto (cartelle, main, ecc.)
+COPY . .  
 
 # Crea la struttura delle cartelle per l'input e l'output
-RUN mkdir -p /app/data/raw /app/results/plots  # -p serve a creare anche le sottocartelle
+# -p serve a creare anche le sottocartelle
+RUN mkdir -p /app/data/raw /app/results/plots  
 
-# Permessi di scrittura per tutta la cartella results (da inserire?)
+# Permessi di scrittura per tutta la cartella results
 RUN chmod -R 777 /app/results
 
 # Questo dice a Python di cercare i moduli partendo dalla cartella /app
