@@ -97,7 +97,6 @@ class KNN:
             # Se più classi/etichette hanno lo stesso numero massimo di occorrenze avremo che la somma sarà > 1
             if np.sum(counts == np.max(counts)) > 1:
                 classes = values[counts == np.max(counts)]  # Seleziona solo le classi/etichette che hanno pareggiato
-                np.random.seed(42)
                 y_pred[i] = int(np.random.choice(classes))  # Viene scelta una classe/etichetta a caso tra quelle che pareggiano
             else:
                 # Altrimenti viene assegnata la classe/etichetta con il numero massimo di occorrenze
