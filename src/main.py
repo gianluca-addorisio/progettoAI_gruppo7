@@ -46,6 +46,10 @@ def save_json(out_path: Path, payload: dict) -> None:
 
 
 def main() -> None:
+
+    np.random.seed(42)
+    random.seed(42)
+    
     # 1) CLI
     ns = parse_args()
 

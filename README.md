@@ -74,8 +74,73 @@ Sono state adottate le seguenti operazioni per garantire correttezza sperimental
 
 ## Esecuzione
 
-Attivare l’ambiente virtuale e installare le dipendenze:
+Con Docker:
 
+Spostarsi nella cartella del progetto
+```bash
+docker build -t gruppo7-knn .
+```
+"build": ordina a Docker di creare l'immagine seguendo il Dockerfile  
+"-t gruppo7-knn": assegna un nome all'immagine  
+".": Docker cercherà il Dockerfile qui
+
+```bash
+docker run \-v "$(pwd)/data/raw:/app/data/raw" \-v "$(pwd)/results:/app/results" \gruppo7-knn <modalità> [parametri]
+```
+"run": dice a Docker di creare e avviare un nuovo contenitore basato su un'immagine specifica  
+"$(pwd)/data/raw": è il percorso sul computer reale, dove $(pwd) identifica la cartella attuale  
+":/app/data/raw": è il percorso "virtuale" dentro il container  
+Quindi il programma dentro Docker vedrà il dataset come se fosse al suo interno, ma in realtà lo sta leggendo dalla cartella reale  
+"\-v "$(pwd)/results:/app/results": quando lo script salva un grafico o un report in /app/results, quel file apparirà nella cartella reale  
+"\gruppo7-knn": è il nome dell'immagine che è stata costruita con il comando build. Contiene Python e tutte le librerie (pandas, numpy, ecc.)
+
+### Esempi di "docker run"
+
+1. Modalità Holdout
+
+Suddivisione del dataset in training e test set secondo una percentuale specificata.
+
+```bash
+docker run \-v "$(pwd)/data/raw:/app/data/raw" \-v "$(pwd)/results:/app/results" \gruppo7-knn holdout --dataset data/raw/version_1.csv --k 5 --test_size 0.3 --metriche all
+```
+
+In questo esempio k = 5, test_size = 0.3 (30% dei dati utilizzati per il test) e vengono calcolate tutte le metriche disponibili.
+
+2. Modalità B – K-Fold Cross Validation
+
+Esecuzione della validazione incrociata con K fold.
+
+```bash
+docker run \-v "$(pwd)/data/raw:/app/data/raw" \-v "$(pwd)/results:/app/results" \gruppo7-knn B --dataset data/raw/version_1.csv --k 5 --K 5 --metriche accuracy auc
+```
+
+In questo caso k = 5 indica il numero di vicini del classificatore, K = 5 indica il numero di fold e vengono calcolate solo le metriche accuracy e auc.
+
+3. Modalità C – Random Subsampling
+
+Esecuzione di più esperimenti di holdout (repeated holdout).
+
+```bash
+docker run \-v "$(pwd)/data/raw:/app/data/raw" \-v "$(pwd)/results:/app/results" \gruppo7-knn C --dataset data/raw/version_1.csv --k 5 --K 10 --test_size 0.3 --metriche all
+```
+
+In questo esempio k = 5, K = 10 indica il numero di ripetizioni, test_size = 0.3 viene applicato a ogni ripetizione e vengono calcolate tutte le metriche disponibili.
+
+---
+Con ambiente virtuale:  
+Creare, attivare l’ambiente virtuale e installare le dipendenze:
+
+Spostati nella cartella del progetto e crea il venv:
+```bash
+python3 -m venv venv
+```
+
+Attivazione:
+```bash
+source venv/bin/activate
+```
+
+Installazione dipendenze:
 ```bash
 pip install -r requirements.txt
 ```
@@ -83,7 +148,7 @@ pip install -r requirements.txt
 Il programma deve essere eseguito come modulo Python dalla directory principale del progetto:
 
 ```bash
-python -m src.main <modalita> [parametri]
+python3 -m src.main <modalita> [parametri]
 ```
 
 ### Esempi di esecuzione
@@ -95,7 +160,7 @@ Il programma viene eseguito da linea di comando specificando la modalità di val
 Suddivisione del dataset in training e test set secondo una percentuale specificata.
 
 ```bash
-python -m src.main holdout --dataset data/raw/version_1.csv --k 5 --test_size 0.3 --metriche all
+python3 -m src.main holdout --dataset data/raw/version_1.csv --k 5 --test_size 0.3 --metriche all
 ```
 
 In questo esempio k = 5, test_size = 0.3 (30% dei dati utilizzati per il test) e vengono calcolate tutte le metriche disponibili.
@@ -105,7 +170,7 @@ In questo esempio k = 5, test_size = 0.3 (30% dei dati utilizzati per il test) e
 Esecuzione della validazione incrociata con K fold.
 
 ```bash
-python -m src.main B --dataset data/raw/version_1.csv --k 5 --K 5 --metriche accuracy auc
+python3 -m src.main B --dataset data/raw/version_1.csv --k 5 --K 5 --metriche accuracy auc
 ```
 
 In questo caso k = 5 indica il numero di vicini del classificatore, K = 5 indica il numero di fold e vengono calcolate solo le metriche accuracy e auc.
@@ -115,7 +180,7 @@ In questo caso k = 5 indica il numero di vicini del classificatore, K = 5 indica
 Esecuzione di più esperimenti di holdout (repeated holdout).
 
 ```bash
-python -m src.main C --dataset data/raw/version_1.csv --k 5 --K 10 --test_size 0.3 --metriche all
+python3 -m src.main C --dataset data/raw/version_1.csv --k 5 --K 10 --test_size 0.3 --metriche all
 ```
 
 In questo esempio k = 5, K = 10 indica il numero di ripetizioni, test_size = 0.3 viene applicato a ogni ripetizione e vengono calcolate tutte le metriche disponibili.
@@ -176,7 +241,7 @@ In particolare vengono testati:
 Per eseguire i test dalla directory principale del progetto:
 
 ```bash
-python -m unittest discover tests
+python3 -m unittest discover tests
 ```
 
 Il superamento dei test garantisce la correttezza logica delle funzioni di validazione e valutazione implementate.
@@ -195,6 +260,7 @@ Attualmente risultano implementati:
 - Sistema modulare per il calcolo delle metriche tramite Strategy Pattern
 - Generazione automatica di file di output e grafici
 - Test automatici per verifica di split e metriche
+- Dockerfile per esecuzione con docker
 
 La struttura del repository è organizzata in modo modulare e versionata tramite Git.
 
@@ -202,10 +268,8 @@ La struttura del repository è organizzata in modo modulare e versionata tramite
 
 ## Prossimi Passi
 
-1. Estensione dell'analisi ROC anche alle modalità B (K-Fold) e C (Random Subsampling).
 2. Implementazione di una Confusion Matrix aggregata per K-Fold.
 3. Eventuale calcolo e visualizzazione della ROC media in K-Fold.
-4. Dockerizzazione del progetto per garantire piena riproducibilità dell’ambiente.
 
 ---
 
