@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from src.evaluation.splits import holdout_split_by_id
+from src.evaluation.splits import holdout_split_by_id, kfold_indices, random_subsampling_indices
 from src.evaluation.metrics import evaluate_classification
 
 class TestEvaluation(unittest.TestCase):
@@ -25,6 +25,37 @@ class TestEvaluation(unittest.TestCase):
         intersection = train_ids.intersection(test_ids)
         self.assertEqual(len(intersection), 0, f"Leakage rilevato per gli ID: {intersection}")
 
+    def test_kfold_indices(self):
+        """Verifica che K-Fold crei il numero corretto di fold e non ci siano leakage."""
+        n_samples = 12
+        k = 3
+        splits = kfold_indices(n_samples, k=k)
+
+        self.assertEqual(len(splits), k)
+        
+        for train_idx, test_idx in splits:
+            # Verifica che non ci siano indici duplicati tra train e test
+            intersection = np.intersect1d(train_idx, test_idx)
+            self.assertEqual(len(intersection), 0)
+            # Verifica che la somma degli indici corrisponda al totale
+            self.assertEqual(len(train_idx) + len(test_idx), n_samples)
+
+    def test_random_subsampling_indices(self):
+        """Verifica le dimensioni e la riproducibilità del Random Subsampling."""
+        n_samples = 100
+        test_size = 0.2
+        r = 5
+        seed = 10
+        
+        splits = random_subsampling_indices(n_samples, test_size=test_size, r=r, seed=seed)
+        
+        self.assertEqual(len(splits), r)
+        
+        for train_idx, test_idx in splits:
+            # Con 100 campioni e test_size 0.2, test deve essere 20 e train 80
+            self.assertEqual(len(test_idx), 20)
+            self.assertEqual(len(train_idx), 80)
+            
     def test_metrics_perfect_classifier(self):
         """Verifica che le metriche siano corrette per un classificatore perfetto"""
         y_true = [0, 0, 1, 1]  # Invece di 2 e 4
