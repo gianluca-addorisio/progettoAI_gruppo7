@@ -236,7 +236,7 @@ In particolare vengono testati:
 
 - correttezza degli split (holdout, k-fold, random subsampling)
 - correttezza del calcolo delle metriche
-- coerenza delle aggregazioni (media e deviazione standard)
+- correttezza del modello KNN (distanza euclidea, etichette corrette e selezione del vicino)
 
 Per eseguire i test dalla directory principale del progetto:
 
