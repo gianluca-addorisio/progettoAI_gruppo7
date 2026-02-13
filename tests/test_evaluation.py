@@ -27,8 +27,8 @@ class TestEvaluation(unittest.TestCase):
 
     def test_metrics_perfect_classifier(self):
         """Verifica che le metriche siano corrette per un classificatore perfetto"""
-        y_true = [2, 2, 4, 4]
-        y_pred = [2, 2, 4, 4]
+        y_true = [0, 0, 1, 1]  # Invece di 2 e 4
+        y_pred = [0, 0, 1, 1]
 
         results = evaluate_classification(y_true, y_pred)
 
