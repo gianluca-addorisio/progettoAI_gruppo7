@@ -11,14 +11,14 @@ import argparse
 
 
 # insieme delle metriche accettate da linea di comando
-metriche_consentite = set (["accuracy", "error_rate", "sensitivity", "specificity", "geometric_mean", "auc", "all"])
+metriche_consentite = set (["accuracy", "error_rate", "sensitivity", "specificity", "gmean", "auc", "all"])
 
 
 def add_args(p):
 
     """
 
-    Aggiunge al parser e al subparser gli argomenti comuni a tutte le modalità di valytazione, cioè:
+    Aggiunge al parser e al subparser gli argomenti comuni a tutte le modalità di validazione, cioè:
     - --dataset: path del dataset
     - --k_neighbors: numero di k vicini del classificatore
     - --metriche: elenco metriche da calcolare metrics
