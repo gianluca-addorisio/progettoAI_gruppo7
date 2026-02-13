@@ -25,18 +25,17 @@ from typing import Tuple, List
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import random
+
 from .evaluation.metrics import roc_curve_binary
 
 from .preprocessing.CLI_args import parse_args
 from .dataset.dataset import get_loader
 from .preprocessing.preprocessing import RawDatasetCleaner, DataPreprocessor, LabelEncoder
 from .models.knn import KNN, EuclideanDistance
-from .evaluation.evaluation import (
-    evaluate_model_holdout,
-    evaluate_model_kfold,
-    evaluate_model_subsampling
-)
+
 from .evaluation.plot import plot_metric_summary, plot_metric_distribution
+from src.evaluation.validation_strategy import ValidationFactory
 
 
 def save_json(out_path: Path, payload: dict) -> None:
@@ -100,68 +99,62 @@ def main() -> None:
     positive_label = 1
     seed = 42
 
+    # --- Strategy Pattern per la validazione ---
+    strategy = ValidationFactory.create(ns.eval_mode)
+
+    # Parametri comuni passati a tutte le strategie
+    common_kwargs = {
+        "seed": seed,
+        "positive_label": positive_label,
+        "test_size": getattr(ns, "test_size", None),
+        "K": getattr(ns, "k_folds", None),
+        "r": getattr(ns, "n_ripetizioni", None),
+    }
+
+    evaluation_output = strategy.evaluate(
+        model=model,
+        X=X,
+        y=y,
+        ids=ids,
+        metric_names=metric_names,
+        **common_kwargs
+    )
+
+    # Gestione differenziata output holdout vs altre modalità
     if ns.eval_mode == "holdout":
-        holdout_out = evaluate_model_holdout(
-            model=model,
-            X=X,
-            y=y,
-            ids=ids,
-            metric_names=metric_names,
-            test_size=ns.test_size,
-            seed=seed,
-            positive_label=positive_label
-        )
-
-        results = holdout_out["metrics"]
-        y_true_holdout = holdout_out["y_true"]
-        y_pred_holdout = holdout_out["y_pred"]
-        y_score_holdout = holdout_out["y_score"]
-
-    elif ns.eval_mode == "B":
-        results = evaluate_model_kfold(
-            model=model,
-            X=X,
-            y=y,
-            ids=ids,
-            metric_names=metric_names,
-            k=ns.k_folds,
-            seed=seed,
-            positive_label=positive_label
-        )
-
-    elif ns.eval_mode == "C":
-        results = evaluate_model_subsampling(
-            model=model,
-            X=X,
-            y=y,
-            ids=ids,
-            metric_names=metric_names,
-            r=ns.n_ripetizioni,
-            test_size=ns.test_size,
-            seed=seed,
-            positive_label=positive_label
-        )
-
+        results = evaluation_output["metrics"]
+        y_true_holdout = evaluation_output["y_true"]
+        y_pred_holdout = evaluation_output["y_pred"]
+        y_score_holdout = evaluation_output["y_score"]
     else:
-        raise SystemExit(f"Modalità non riconosciuta: {ns.eval_mode}")
+        results = evaluation_output
+        y_true_holdout = None
+        y_pred_holdout = None
+        y_score_holdout = None
+
 
     # --- Confronto Holdout vs Media K-Fold (solo se eval_mode == "B") ---
     if ns.eval_mode == "B":
-        # Holdout "di riferimento" per confronto (test_size fisso a 0.3)
+
         model_holdout = KNN(k=ns.k_neighbors, distance_strategy=EuclideanDistance())
-        holdout_out_cmp = evaluate_model_holdout(
+
+        holdout_strategy = ValidationFactory.create("holdout")
+
+        holdout_out_cmp = holdout_strategy.evaluate(
             model=model_holdout,
             X=X,
             y=y,
             ids=ids,
             metric_names=metric_names,
-            test_size=0.3,
             seed=seed,
-            positive_label=positive_label
+            positive_label=positive_label,
+            test_size=0.3,
         )
+
         holdout_metrics = holdout_out_cmp["metrics"]
 
         print("\n=== Confronto Holdout vs Media K-Fold ===")
+
         for metric, agg in results.items():
             if isinstance(agg, dict) and "mean" in agg and metric in holdout_metrics:
                 kfold_mean = agg["mean"]
@@ -172,8 +165,9 @@ def main() -> None:
                     print(f"  K-Fold mean  = {float(kfold_mean):.4f}")
                     print(f"  Differenza   = {float(kfold_mean) - float(holdout_value):.4f}")
                 except (TypeError, ValueError):
-                    # Se qualche metrica non è numerica, salta senza rompere l'esecuzione
                     continue
+
+
 
     # 10) Output a video
     print("\nCleaning Report:")
