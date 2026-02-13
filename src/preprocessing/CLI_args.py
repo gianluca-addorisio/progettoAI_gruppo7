@@ -18,7 +18,7 @@ def add_args(p):
 
     """
 
-    Aggiunge al parser e al subparser gli argomenti comuni a tutte le modalità di valytazione, cioè:
+    Aggiunge al parser e al subparser gli argomenti comuni a tutte le modalità di validazione, cioè:
     - --dataset: path del dataset
     - --k_neighbors: numero di k vicini del classificatore
     - --metriche: elenco metriche da calcolare metrics
