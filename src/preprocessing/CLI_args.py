@@ -11,7 +11,7 @@ import argparse
 
 
 # insieme delle metriche accettate da linea di comando
-metriche_consentite = set (["accuracy", "error_rate", "sensitivity", "specificity", "geometric_mean", "auc", "all"])
+metriche_consentite = set (["accuracy", "error_rate", "sensitivity", "specificity", "gmean", "auc", "all"])
 
 
 def add_args(p):
