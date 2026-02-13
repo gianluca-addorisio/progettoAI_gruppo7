@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from src.evaluation.splits import holdout_split_by_id, kfold_indices, random_subsampling_indices
-from src.evaluation.metrics import evaluate_classification
+from src.evaluation.metrics import evaluate_classification, auc_score, roc_curve_binary
 
 class TestEvaluation(unittest.TestCase):
 
@@ -60,6 +60,7 @@ class TestEvaluation(unittest.TestCase):
         """Verifica che le metriche siano corrette per un classificatore perfetto"""
         y_true = [0, 0, 1, 1]  # Invece di 2 e 4
         y_pred = [0, 0, 1, 1]
+        y_score = np.array([0.1, 0.2, 0.9, 0.8])
 
         results = evaluate_classification(y_true, y_pred)
 
@@ -69,5 +70,22 @@ class TestEvaluation(unittest.TestCase):
         self.assertEqual(results["specificity"], 1.0)
         self.assertEqual(results["gmean"], 1.0)
 
+        # Test AUC
+        auc = auc_score(y_true, y_score)
+        self.assertEqual(auc, 1.0, "L'AUC di un classificatore perfetto deve essere 1.0")
+
+    def test_roc_curve_logic(self):
+        """Verifica la generazione della curva ROC"""
+        y_true = [0, 0, 1, 1]
+        y_score = [0.1, 0.4, 0.35, 0.8]
+        
+        fpr, tpr, thresholds = roc_curve_binary(y_true, y_score)
+        
+        # La curva ROC deve sempre iniziare a (0,0) e finire a (1,1)
+        self.assertEqual(fpr[0], 0.0)
+        self.assertEqual(tpr[0], 0.0)
+        self.assertEqual(fpr[-1], 1.0)
+        self.assertEqual(tpr[-1], 1.0)
+        
 if __name__ == '__main__':
     unittest.main()
