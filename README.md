@@ -66,7 +66,7 @@ progettoAI_gruppo7/
 Sono state adottate le seguenti operazioni per garantire correttezza sperimentale:
 
 - **Split per ID**: prevenzione del data leakage assicurando che campioni dello stesso paziente non siano distribuiti tra training e test set.
-- **Gestione duplicati**: aggregazione dei record basata sull'identificativo del paziente.
+- **Gestione duplicati**: pulizia in base al valore della label: se i duplicati hanno label contrastante si eliminano; se in uno dei duplicati manca la label si elimina quello specifico campione.
 - **Valori mancanti**: imputazione tramite mediana.
 - **Valori anomali**: limitazione dei valori superiori alla soglia prevista dal dominio (>10) per mantenere coerenza con la codifica originale del dataset.
 
